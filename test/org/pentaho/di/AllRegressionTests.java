@@ -41,6 +41,7 @@ import org.pentaho.di.trans.steps.detectlastrow.DetectLastRowStepTest;
 import org.pentaho.di.trans.steps.filterrows.FilterRowsTest;
 import org.pentaho.di.trans.steps.getxmldata.GetXMLDataTest;
 import org.pentaho.di.trans.steps.injector.InjectorTest;
+import org.pentaho.di.trans.steps.ivwloader.IngresVectorwiseTest;
 import org.pentaho.di.trans.steps.nullif.NullIfTest;
 import org.pentaho.di.trans.steps.regexeval.RegexEvalTest;
 import org.pentaho.di.trans.steps.rowgenerator.RowGeneratorTest;
