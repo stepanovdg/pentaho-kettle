@@ -89,14 +89,14 @@ public class TextFileInput extends BaseStep implements StepInterface {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
   }
 
-  public static final String getLine( LogChannelInterface log, InputStreamReader reader, int formatNr,
-      StringBuilder line ) throws KettleFileException {
+  public static String getLine( LogChannelInterface log, InputStreamReader reader, int formatNr,
+                                StringBuilder line ) throws KettleFileException {
     EncodingType type = EncodingType.guessEncodingType( reader.getEncoding() );
     return getLine( log, reader, type, formatNr, line );
   }
 
-  public static final String getLine( LogChannelInterface log, InputStreamReader reader, EncodingType encodingType,
-      int formatNr, StringBuilder line ) throws KettleFileException {
+  public static String getLine( LogChannelInterface log, InputStreamReader reader, EncodingType encodingType,
+                                int formatNr, StringBuilder line ) throws KettleFileException {
     int c = 0;
     line.setLength( 0 );
     try {
@@ -138,9 +138,9 @@ public class TextFileInput extends BaseStep implements StepInterface {
           while ( c >= 0 ) {
             c = reader.read();
 
-            if ( encodingType.isReturn( c ) ) {
+            if ( encodingType.isLinefeed( c ) ) {
               return line.toString();
-            } else if ( !encodingType.isLinefeed( c ) ) {
+            } else if ( !encodingType.isReturn( c ) ) {
               if ( c >= 0 ) {
                 line.append( (char) c );
               }
@@ -167,14 +167,15 @@ public class TextFileInput extends BaseStep implements StepInterface {
   }
 
   @Deprecated
-  public static final String[] guessStringsFromLine( LogChannelInterface log, String line, TextFileInputMeta inf,
-      String delimiter ) throws KettleException {
+  public static String[] guessStringsFromLine( LogChannelInterface log, String line, TextFileInputMeta inf,
+                                               String delimiter ) throws KettleException {
     return guessStringsFromLine( new Variables(), log, line, inf, delimiter, StringUtil.substituteHex( inf
         .getEnclosure() ), StringUtil.substituteHex( inf.getEscapeCharacter() ) );
   }
 
-  public static final String[] guessStringsFromLine( VariableSpace space, LogChannelInterface log, String line,
-      TextFileInputMeta inf, String delimiter, String enclosure, String escapeCharacter ) throws KettleException {
+  public static String[] guessStringsFromLine( VariableSpace space, LogChannelInterface log, String line,
+                                               TextFileInputMeta inf, String delimiter, String enclosure,
+                                               String escapeCharacter ) throws KettleException {
     List<String> strings = new ArrayList<String>();
 
     String pol; // piece of line
@@ -329,17 +330,15 @@ public class TextFileInput extends BaseStep implements StepInterface {
           // replace the escaped enclosures with enclosures...
           if ( contains_escaped_enclosures ) {
             String replace = escapeCharacter + enclosure;
-            String replaceWith = enclosure;
 
-            pol = Const.replace( pol, replace, replaceWith );
+            pol = Const.replace( pol, replace, enclosure );
           }
 
           // replace the escaped separators with separators...
           if ( contains_escaped_separators ) {
             String replace = escapeCharacter + delimiter;
-            String replaceWith = delimiter;
 
-            pol = Const.replace( pol, replace, replaceWith );
+            pol = Const.replace( pol, replace, delimiter );
           }
 
           // Now add pol to the strings found!
@@ -380,8 +379,8 @@ public class TextFileInput extends BaseStep implements StepInterface {
     return strings.toArray( new String[strings.size()] );
   }
 
-  public static final String[] convertLineToStrings( LogChannelInterface log, String line, InputFileMetaInterface inf,
-      String delimiter, String enclosure, String escapeCharacters ) throws KettleException {
+  public static String[] convertLineToStrings( LogChannelInterface log, String line, InputFileMetaInterface inf,
+    String delimiter, String enclosure, String escapeCharacters ) throws KettleException {
     String[] strings = new String[inf.getInputFields().length];
     int fieldnr;
 
@@ -539,17 +538,15 @@ public class TextFileInput extends BaseStep implements StepInterface {
           // replace the escaped enclosures with enclosures...
           if ( contains_escaped_enclosures ) {
             String replace = inf.getEscapeCharacter() + enclosure;
-            String replaceWith = enclosure;
 
-            pol = Const.replace( pol, replace, replaceWith );
+            pol = Const.replace( pol, replace, enclosure );
           }
 
           // replace the escaped separators with separators...
           if ( contains_escaped_separators ) {
             String replace = inf.getEscapeCharacter() + delimiter;
-            String replaceWith = delimiter;
 
-            pol = Const.replace( pol, replace, replaceWith );
+            pol = Const.replace( pol, replace, delimiter );
           }
 
           // Now add pol to the strings found!
@@ -561,9 +558,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
             // As this is "the exception" we catch and resize here.
             //
             String[] newStrings = new String[strings.length];
-            for ( int x = 0; x < strings.length; x++ ) {
-              newStrings[x] = strings[x];
-            }
+            System.arraycopy( strings, 0, newStrings, 0, strings.length );
             strings = newStrings;
           }
 
@@ -578,7 +573,6 @@ public class TextFileInput extends BaseStep implements StepInterface {
           if ( fieldnr < strings.length ) {
             strings[fieldnr] = Const.EMPTY_STRING;
           }
-          fieldnr++;
         }
       } else {
         // Fixed file format: Simply get the strings at the required positions...
@@ -614,7 +608,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
    * Date, String, String, String, long)} instead.
    */
   @Deprecated
-  public static final Object[] convertLineToRow( LogChannelInterface log, TextFileLine textFileLine,
+  public static Object[] convertLineToRow( LogChannelInterface log, TextFileLine textFileLine,
       InputFileMetaInterface info, RowMetaInterface outputRowMeta, RowMetaInterface convertRowMeta, String fname,
       long rowNr, String delimiter, FileErrorHandler errorHandler, boolean addShortFilename, boolean addExtension,
       boolean addPath, boolean addSize, boolean addIsHidden, boolean addLastModificationDate, boolean addUri,
@@ -626,7 +620,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
         addRootUri, shortFilename, path, hidden, modificationDateTime, uri, rooturi, extension, size );
   }
 
-  public static final Object[] convertLineToRow( LogChannelInterface log, TextFileLine textFileLine,
+  public static Object[] convertLineToRow( LogChannelInterface log, TextFileLine textFileLine,
       InputFileMetaInterface info, Object[] passThruFields, int nrPassThruFields, RowMetaInterface outputRowMeta,
       RowMetaInterface convertRowMeta, String fname, long rowNr, String delimiter, String enclosure,
       String escapeCharacter, FileErrorHandler errorHandler, boolean addShortFilename, boolean addExtension,
@@ -645,7 +639,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
 
     Long errorCount = null;
     if ( info.isErrorIgnored() && info.getErrorCountField() != null && info.getErrorCountField().length() > 0 ) {
-      errorCount = new Long( 0L );
+      errorCount = 0L;
     }
     String errorFields = null;
     if ( info.isErrorIgnored() && info.getErrorFieldsField() != null && info.getErrorFieldsField().length() > 0 ) {
@@ -689,7 +683,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
               value = null;
 
               if ( errorCount != null ) {
-                errorCount = new Long( errorCount.longValue() + 1L );
+                errorCount = errorCount + 1L;
               }
               if ( errorFields != null ) {
                 StringBuilder sb = new StringBuilder( errorFields );
@@ -762,7 +756,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
 
         // Possibly add a row number...
         if ( info.includeRowNumber() ) {
-          r[index] = new Long( rowNr );
+          r[ index ] = rowNr;
           index++;
         }
 
@@ -783,7 +777,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
         }
         // Add Size
         if ( addSize ) {
-          r[index] = new Long( size );
+          r[ index ] = size;
           index++;
         }
         // add Hidden
@@ -804,7 +798,6 @@ public class TextFileInput extends BaseStep implements StepInterface {
         // Add RootUri
         if ( addRootUri ) {
           r[index] = rooturi;
-          index++;
         }
       } // End if r != null
     } catch ( Exception e ) {
@@ -813,9 +806,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
 
     if ( passThruFields != null ) {
       // Simply add all fields from source files step
-      for ( int i = 0; i < nrPassThruFields; i++ ) {
-        r[i] = passThruFields[i];
-      }
+      System.arraycopy( passThruFields, 0, r, 0, nrPassThruFields );
     }
 
     return r;
@@ -827,7 +818,6 @@ public class TextFileInput extends BaseStep implements StepInterface {
     data = (TextFileInputData) sdi;
     meta = (TextFileInputMeta) smi;
     Object[] r = null;
-    boolean retval = true;
     boolean putrow = false;
 
     if ( first ) { // we just got started
@@ -928,15 +918,11 @@ public class TextFileInput extends BaseStep implements StepInterface {
           String line = getLine( log, data.isr, data.encodingType, data.fileFormatType, data.lineStringBuilder );
           if ( line != null ) {
             // Filter row?
-            boolean isFilterLastLine = false;
-            boolean filterOK = checkFilterRow( line, isFilterLastLine );
+            boolean filterOK = checkFilterRow( line, false );
             if ( filterOK ) {
               // logRowlevel("LINE READ: "+line);
               data.lineBuffer.add( new TextFileLine( line, lineNumberInFile, data.file ) );
             } else {
-              if ( isFilterLastLine ) {
-                data.doneReading = true;
-              }
               repeats++; // grab another line, this one got filtered
             }
           } else {
@@ -1110,7 +1096,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
       }
     }
 
-    if ( putrow && r != null ) {
+    if ( putrow ) {
       // See if the previous values need to be repeated!
       if ( data.nr_repeats > 0 ) {
         if ( data.previous_row == null ) { // First invocation...
@@ -1153,7 +1139,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
       }
     }
 
-    return retval;
+    return true;
   }
 
   /**
@@ -1218,15 +1204,15 @@ public class TextFileInput extends BaseStep implements StepInterface {
   /**
    * Adds <code>String</code> value meta with given name if not present and returns index
    *
-   * @param rowMeta
-   * @param fieldName
+   * @param rowMeta  RowMetaInterface
+   * @param fieldName name of the field
    * @return Index in row meta of value meta with <code>fieldName</code>
    */
   private int addValueMeta( RowMetaInterface rowMeta, String fieldName ) {
     ValueMetaInterface valueMeta = new ValueMeta( fieldName, ValueMetaInterface.TYPE_STRING );
     valueMeta.setOrigin( getStepname() );
     // add if doesn't exist
-    int index = -1;
+    int index;
     if ( !rowMeta.exists( valueMeta ) ) {
       index = rowMeta.size();
       rowMeta.addValueMeta( valueMeta );
@@ -1239,13 +1225,13 @@ public class TextFileInput extends BaseStep implements StepInterface {
   /**
    * Check if the line should be taken.
    *
-   * @param line
+   * @param line line to check
    * @param isFilterLastLine
    *          (dummy input param, only set when return value is false)
    * @return true when the line should be taken (when false, isFilterLastLine will be set)
    */
   private boolean checkFilterRow( String line, boolean isFilterLastLine ) {
-    boolean filterOK = true;
+    boolean filterOK;
 
     // check for noEmptyLines
     if ( meta.noEmptyLines() && line.length() == 0 ) {
@@ -1317,7 +1303,9 @@ public class TextFileInput extends BaseStep implements StepInterface {
       }
       data.dataErrorLineHandler.close();
     } catch ( Exception e ) {
-      String errorMsg = "Couldn't close file : " + data.file.getName().getFriendlyURI() + " --> " + e.toString();
+      String errorMsg =
+        "Couldn't close file : " + ( data.file != null ? data.file.getName().getFriendlyURI() : null ) + " --> " + e
+          .toString();
       logError( errorMsg );
       if ( failAfterBadFile( errorMsg ) ) { // ( !meta.isSkipBadFiles() || data.isLastFile ){
         stopAll();
@@ -1378,7 +1366,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
         data.rootUriName = data.file.getName().getRootURI();
       }
       if ( data.addSize ) {
-        data.size = new Long( data.file.getContent().getSize() );
+        data.size = data.file.getContent().getSize();
       }
       data.lineInFile = 0;
       if ( meta.isPassingThruFields() ) {
@@ -1452,8 +1440,7 @@ public class TextFileInput extends BaseStep implements StepInterface {
           // when there is no header, check the filter for the first line
           if ( !meta.hasHeader() || i >= meta.getNrHeaderLines() ) {
             // Filter row?
-            boolean isFilterLastLine = false;
-            boolean filterOK = checkFilterRow( line, isFilterLastLine );
+            boolean filterOK = checkFilterRow( line, false );
             if ( filterOK ) {
               data.lineBuffer.add( new TextFileLine( line, lineNumberInFile, data.file ) ); // Store it in the
               // line buffer...
