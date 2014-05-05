@@ -81,8 +81,19 @@ public class Kitchen {
 
         @Override
         public Pair<KettlePluginException, Future<KettleException>> call() throws Exception {
+          for ( long i = 0; i < 10000000000L; i++ ) {
+            if ( i / 1000000000 != 0 && i % 1000000000 == 0 ) {
+              System.out.print( "0" );
+            }
+          } ;
           PluginRegistry.addPluginType( repositoryPluginType );
           try {
+            for ( long i = 0; i < 10000000000L; i++ ) {
+              if ( i / 1000000000 != 0 && i % 1000000000 == 0 ) {
+                System.out.print( "1" );
+              }
+            } ;
+
             KettleClientEnvironment.init();
           } catch ( KettlePluginException e ) {
             return Pair.of( e, null );
@@ -94,6 +105,15 @@ public class Kitchen {
               @Override
               public KettleException call() throws Exception {
                 try {
+                  //Thread.sleep( 200L );
+                  /*if(true)
+                  throw new RuntimeException( "early" );
+                  for ( long i = 0; i < 1000000000000L; i++ ) {
+                    if ( i / 1000000000 != 0 && i % 1000000000 == 0 ) {
+                      System.out.print( "2" );
+                    }
+                  } ;   */
+
                   KettleEnvironment.init();
                   KettleClientEnvironment.getInstance().setClient( KettleClientEnvironment.ClientType.KITCHEN );
                 } catch ( KettleException e ) {
@@ -225,6 +245,8 @@ public class Kitchen {
     }
     Future<KettleException> kettleInitFuture = repositoryRegisterResults.getSecond();
 
+    //kettleInitFuture.get(); // wait till kettle init is over
+
     if ( !Const.isEmpty( optionLogfile ) ) {
       fileAppender = new FileLoggingEventListener( optionLogfile.toString(), true );
       KettleLogStore.getAppender().addLoggingEventListener( fileAppender );
@@ -285,6 +307,7 @@ public class Kitchen {
           RepositoriesMeta repsinfo = new RepositoriesMeta();
           try {
             repsinfo.readData();
+            Thread.sleep( 3000L );
           } catch ( Exception e ) {
             throw new KettleException( BaseMessages.getString( PKG, "Kitchen.Error.NoRepDefinied" ), e );
           }

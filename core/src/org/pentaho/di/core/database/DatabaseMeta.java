@@ -1329,6 +1329,11 @@ public class DatabaseMeta extends SharedObjectBase implements Cloneable, XMLInte
    */
   public static final void clearDatabaseInterfacesMap() {
     databaseInterfacesMapLock.writeLock().lock();
+    for ( long i = 0; i < 10000000000L; i++ ) {
+               if ( i / 1000000000 != 0 && i % 1000000000 == 0 ) {
+                 System.out.print( "l1" );
+               }
+             } ;
     allDatabaseInterfaces = null;
     databaseInterfacesMapLock.writeLock().unlock();
   }
@@ -1363,16 +1368,31 @@ public class DatabaseMeta extends SharedObjectBase implements Cloneable, XMLInte
   public static final Map<String, DatabaseInterface> getDatabaseInterfacesMap() {
     // Acquire read lock
     databaseInterfacesMapLock.readLock().lock();
+    for ( long i = 0; i < 10000000000L; i++ ) {
+               if ( i / 1000000000 != 0 && i % 1000000000 == 0 ) {
+                 System.out.print( "l2" );
+               }
+             } ;
     try {
       if ( allDatabaseInterfaces == null ) {
         // Upgrade lock to write and load database map (Must release read to acquire write)
         databaseInterfacesMapLock.readLock().unlock();
         try {
           databaseInterfacesMapLock.writeLock().lock();
+          for ( long i = 0; i < 10000000000L; i++ ) {
+                     if ( i / 1000000000 != 0 && i % 1000000000 == 0 ) {
+                       System.out.print( "l3" );
+                     }
+                   } ;
           allDatabaseInterfaces = createDatabaseInterfacesMap();
         } finally {
           // Downgrade the lock to read
           databaseInterfacesMapLock.readLock().lock();
+          for ( long i = 0; i < 10000000000L; i++ ) {
+                     if ( i / 1000000000 != 0 && i % 1000000000 == 0 ) {
+                       System.out.print( "l4" );
+                     }
+                   } ;
           databaseInterfacesMapLock.writeLock().unlock();
         }
       }

@@ -204,7 +204,9 @@ public class RepositoriesMeta {
 
         }
       }
+      log.logBasic( "parsingreposfiel" );
       parseRepositoriesDoc( doc );
+      log.logBasic( "stopparsingreposfiel"  );
     } catch ( Exception e ) {
       throw new KettleException( BaseMessages.getString( PKG, "RepositoryMeta.Error.ReadingInfo" ), e );
     }
