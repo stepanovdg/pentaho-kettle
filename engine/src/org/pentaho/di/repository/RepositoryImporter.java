@@ -111,11 +111,11 @@ public class RepositoryImporter implements IRepositoryImporter {
 
       RepositoryImportLocation.setRepositoryImportLocation( baseDirectory );
 
-      for ( int ii = 0; ii < filenames.length; ++ii ) {
+      for ( String filename1 : filenames ) {
 
         final String filename =
           ( !Const.isEmpty( fileDirectory ) )
-            ? fileDirectory + Const.FILE_SEPARATOR + filenames[ii] : filenames[ii];
+            ? fileDirectory + Const.FILE_SEPARATOR + filename1 : filename1;
         if ( log.isBasic() ) {
           log.logBasic( "Import objects from XML file [" + filename + "]" );
         }
@@ -195,6 +195,9 @@ public class RepositoryImporter implements IRepositoryImporter {
     for ( ObjectId id : rep.getDatabaseIDs( false ) ) {
       DatabaseMeta databaseMeta = rep.loadDatabaseMeta( id, null );
       validateImportedElement( importRules, databaseMeta );
+      /*if ( databaseMeta.isShared() ) {
+        continue;
+      }       */
       sharedObjects.storeObject( databaseMeta );
     }
     List<SlaveServer> slaveServers = new ArrayList<SlaveServer>();
@@ -219,17 +222,16 @@ public class RepositoryImporter implements IRepositoryImporter {
   /**
    * Validates the repository element that is about to get imported against the list of import rules.
    *
-   * @param the
-   *          import rules to validate against.
-   * @param subject
+   * @param importRules the import rules to validate against.
+   * @param subject the subject to validate.
    * @throws KettleException
    */
   public static void validateImportedElement( ImportRules importRules, Object subject ) throws KettleException {
     List<ImportValidationFeedback> feedback = importRules.verifyRules( subject );
     List<ImportValidationFeedback> errors = ImportValidationFeedback.getErrors( feedback );
     if ( !errors.isEmpty() ) {
-      StringBuffer message =
-        new StringBuffer( BaseMessages.getString( PKG, "RepositoryImporter.ValidationFailed.Message", subject
+      StringBuilder message =
+        new StringBuilder( BaseMessages.getString( PKG, "RepositoryImporter.ValidationFailed.Message", subject
           .toString() ) );
       message.append( Const.CR );
       for ( ImportValidationFeedback error : errors ) {
@@ -275,15 +277,8 @@ public class RepositoryImporter implements IRepositoryImporter {
           transMeta.addDatabase( databaseMeta );
         } else {
           DatabaseMeta imported = transMeta.getDatabase( index );
-          if ( overwrite ) {
-            // Preserve the object id so we can update without having to look up the id
-            imported.setObjectId( databaseMeta.getObjectId() );
-            imported.setChanged();
-          } else {
-            imported.replaceMeta( databaseMeta );
-            // We didn't actually change anything
-            imported.setChanged( false );
-          }
+          imported.setObjectId( databaseMeta.getObjectId() );
+          imported.setChanged();
         }
       }
 
@@ -367,15 +362,8 @@ public class RepositoryImporter implements IRepositoryImporter {
           transMeta.addDatabase( databaseMeta );
         } else {
           DatabaseMeta imported = transMeta.getDatabase( index );
-          if ( overwrite ) {
-            // Preserve the object id so we can update without having to look up the id
-            imported.setObjectId( databaseMeta.getObjectId() );
-            imported.setChanged();
-          } else {
-            imported.replaceMeta( databaseMeta );
-            // We didn't actually change anything
-            imported.setChanged( false );
-          }
+          imported.setObjectId( databaseMeta.getObjectId() );
+          imported.setChanged();
         }
       }
 
@@ -482,12 +470,7 @@ public class RepositoryImporter implements IRepositoryImporter {
     //
     // Load transformation from XML into a directory, possibly created!
     //
-    TransMeta transMeta = new TransMeta( transnode, null ); // ignore shared objects
-    replaceSharedObjects( transMeta );
-    feedback.setLabel( BaseMessages.getString( PKG, "RepositoryImporter.ImportTrans.Label", Integer
-      .toString( transformationNumber ), transMeta.getName() ) );
-
-    validateImportedElement( importRules, transMeta );
+    TransMeta transMeta = new TransMeta( transnode, rep, SpoonFactory.getInstance() );
 
     // What's the directory path?
     String directoryPath = XMLHandler.getTagValue( transnode, "info", "directory" );
@@ -523,6 +506,13 @@ public class RepositoryImporter implements IRepositoryImporter {
     }
 
     if ( existingId == null || overwrite ) {
+      // ignore shared objects
+      replaceSharedObjects( transMeta );
+      feedback.setLabel( BaseMessages.getString( PKG, "RepositoryImporter.ImportTrans.Label", Integer
+        .toString( transformationNumber ), transMeta.getName() ) );
+
+      validateImportedElement( importRules, transMeta );
+
       transMeta.setObjectId( existingId );
       transMeta.setRepositoryDirectory( targetDirectory );
       patchMappingSteps( transMeta );
@@ -567,11 +557,6 @@ public class RepositoryImporter implements IRepositoryImporter {
     // Load the job from the XML node.
     //
     JobMeta jobMeta = new JobMeta( jobnode, rep, false, SpoonFactory.getInstance() );
-    replaceSharedObjects( jobMeta );
-    feedback.setLabel( BaseMessages.getString( PKG, "RepositoryImporter.ImportJob.Label", Integer
-      .toString( jobNumber ), jobMeta.getName() ) );
-    validateImportedElement( importRules, jobMeta );
-
     // What's the directory path?
     String directoryPath = Const.NVL( XMLHandler.getTagValue( jobnode, "directory" ), Const.FILE_SEPARATOR );
 
@@ -607,6 +592,11 @@ public class RepositoryImporter implements IRepositoryImporter {
     }
 
     if ( existintId == null || overwrite ) {
+      replaceSharedObjects( jobMeta );
+      feedback.setLabel( BaseMessages.getString( PKG, "RepositoryImporter.ImportJob.Label", Integer
+        .toString( jobNumber ), jobMeta.getName() ) );
+      validateImportedElement( importRules, jobMeta );
+
       jobMeta.setRepositoryDirectory( targetDirectory );
       jobMeta.setObjectId( existintId );
       patchJobEntries( jobMeta );
@@ -705,7 +695,7 @@ public class RepositoryImporter implements IRepositoryImporter {
 
   private RepositoryDirectoryInterface getTargetDirectory( String directoryPath, String dirOverride,
     RepositoryImportFeedbackInterface feedback ) throws KettleException {
-    RepositoryDirectoryInterface targetDirectory = null;
+    RepositoryDirectoryInterface targetDirectory;
     if ( dirOverride != null ) {
       targetDirectory = rep.findDirectory( directoryPath );
       if ( targetDirectory == null ) {

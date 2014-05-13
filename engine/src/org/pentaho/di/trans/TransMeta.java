@@ -2725,6 +2725,23 @@ public class TransMeta extends AbstractMeta implements XMLInterface, Comparator<
   }
 
   /**
+   * Parse a file containing the XML that describes the transformation. Specify a repository to load default list of
+   * database connections from and to reference in mappings etc.
+   *
+   * @param transnode The XML node to load from
+   * @param rep       the repository to reference.
+   * @param prompter  a GUI component that will prompt the user if the new transformation will overwrite an existing
+   *                  one
+   * @throws KettleXMLException            if any errors occur during parsing of the specified file
+   * @throws KettleMissingPluginsException in case missing plugins were found (details are in the exception in that
+   *                                       case)
+   */
+  public TransMeta( Node transnode, Repository rep, OverwritePrompter prompter )
+    throws KettleXMLException, KettleMissingPluginsException {
+    loadXML( transnode, rep, false, null, prompter );
+  }
+
+  /**
    * Parses an XML DOM (starting at the specified Node) that describes the transformation.
    *
    * @param transnode
@@ -2896,27 +2913,24 @@ public class TransMeta extends AbstractMeta implements XMLInterface, Comparator<
           if ( exist == null ) {
             addDatabase( dbcon );
           } else {
-            if ( !exist.isShared() ) // otherwise, we just keep the shared connection.
-            {
-              boolean askOverwrite = Props.isInitialized() ? props.askAboutReplacingDatabaseConnections() : false;
-              boolean overwrite = Props.isInitialized() ? props.replaceExistingDatabaseConnections() : true;
-              if ( askOverwrite ) {
-                if ( prompter != null ) {
-                  overwrite =
-                    prompter
-                      .overwritePrompt(
-                        BaseMessages.getString( PKG, "TransMeta.Message.OverwriteConnectionYN", dbcon
-                          .getName() ), BaseMessages.getString(
-                          PKG, "TransMeta.Message.OverwriteConnection.DontShowAnyMoreMessage" ),
-                        Props.STRING_ASK_ABOUT_REPLACING_DATABASES );
-                }
+            boolean askOverwrite = Props.isInitialized() ? props.askAboutReplacingDatabaseConnections() : false;
+            boolean overwrite = Props.isInitialized() ? props.replaceExistingDatabaseConnections() : true;
+            if ( askOverwrite ) {
+              if ( prompter != null ) {
+                overwrite =
+                  prompter
+                    .overwritePrompt(
+                      BaseMessages.getString( PKG, "TransMeta.Message.OverwriteConnectionYN", dbcon
+                        .getName() ), BaseMessages.getString(
+                      PKG, "TransMeta.Message.OverwriteConnection.DontShowAnyMoreMessage" ),
+                      Props.STRING_ASK_ABOUT_REPLACING_DATABASES );
               }
+            }
 
-              if ( overwrite ) {
-                int idx = indexOfDatabase( exist );
-                removeDatabase( idx );
-                addDatabase( idx, dbcon );
-              }
+            if ( overwrite ) {
+              int idx = indexOfDatabase( exist );
+              removeDatabase( idx );
+              addDatabase( idx, dbcon );
             }
           }
         }
@@ -5565,7 +5579,7 @@ public class TransMeta extends AbstractMeta implements XMLInterface, Comparator<
         if ( mappingStep.getStepID().equals( "MappingInput" ) ) {
           if ( stepMeta == null ) {
             stepMeta = mappingStep;
-          } else if ( stepMeta != null ) {
+          } else {
             throw new KettleStepException( BaseMessages.getString(
               PKG, "TransMeta.Exception.OnlyOneMappingInputStepAllowed", "2" ) );
           }
@@ -5926,8 +5940,7 @@ public class TransMeta extends AbstractMeta implements XMLInterface, Comparator<
   /**
    * Sets the log table for the transformation.
    *
-   * @param the
-   *          log table to set
+   * @param transLogTable the log table to set
    */
   public void setTransLogTable( TransLogTable transLogTable ) {
     this.transLogTable = transLogTable;

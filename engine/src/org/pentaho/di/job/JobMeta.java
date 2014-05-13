@@ -527,7 +527,7 @@ public class JobMeta extends AbstractMeta implements Cloneable, Comparable<JobMe
   }
 
   /**
-   * Gets the job filter extensions. For JobMeta, this method returns the value of {@link Const.STRING_JOB_FILTER_EXT}
+   * Gets the job filter extensions. For JobMeta, this method returns the value of {@link Const#STRING_JOB_FILTER_EXT}
    *
    * @return the filter extensions
    * @see org.pentaho.di.core.EngineMetaInterface#getFilterExtensions()
@@ -692,9 +692,6 @@ public class JobMeta extends AbstractMeta implements Cloneable, Comparable<JobMe
 
   /**
    * Load the job from the XML file specified.
-   *
-   * @param log
-   *          the logging channel
    * @param fname
    *          The filename to load as a job
    * @param rep
@@ -708,9 +705,6 @@ public class JobMeta extends AbstractMeta implements Cloneable, Comparable<JobMe
 
   /**
    * Load the job from the XML file specified.
-   *
-   * @param log
-   *          the logging channel
    * @param fname
    *          The filename to load as a job
    * @param rep
@@ -1026,25 +1020,21 @@ public class JobMeta extends AbstractMeta implements Cloneable, Comparable<JobMe
         if ( exist == null ) {
           addDatabase( dbcon );
         } else {
-          if ( !exist.isShared() ) {
-            // skip shared connections
+          boolean askOverwrite = Props.isInitialized() ? props.askAboutReplacingDatabaseConnections() : false;
+          boolean overwrite = Props.isInitialized() ? props.replaceExistingDatabaseConnections() : true;
+          if ( askOverwrite && prompter != null ) {
+            overwrite =
+              prompter.overwritePrompt(
+                BaseMessages.getString( PKG, "JobMeta.Dialog.ConnectionExistsOverWrite.Message", dbcon
+                  .getName() ), BaseMessages.getString(
+                  PKG, "JobMeta.Dialog.ConnectionExistsOverWrite.DontShowAnyMoreMessage" ),
+                Props.STRING_ASK_ABOUT_REPLACING_DATABASES );
+          }
 
-            boolean askOverwrite = Props.isInitialized() ? props.askAboutReplacingDatabaseConnections() : false;
-            boolean overwrite = Props.isInitialized() ? props.replaceExistingDatabaseConnections() : true;
-            if ( askOverwrite && prompter != null ) {
-              overwrite =
-                prompter.overwritePrompt(
-                  BaseMessages.getString( PKG, "JobMeta.Dialog.ConnectionExistsOverWrite.Message", dbcon
-                    .getName() ), BaseMessages.getString(
-                    PKG, "JobMeta.Dialog.ConnectionExistsOverWrite.DontShowAnyMoreMessage" ),
-                  Props.STRING_ASK_ABOUT_REPLACING_DATABASES );
-            }
-
-            if ( overwrite ) {
-              int idx = indexOfDatabase( exist );
-              removeDatabase( idx );
-              addDatabase( idx, dbcon );
-            }
+          if ( overwrite ) {
+            int idx = indexOfDatabase( exist );
+            removeDatabase( idx );
+            addDatabase( idx, dbcon );
           }
         }
       }
