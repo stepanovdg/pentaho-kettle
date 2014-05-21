@@ -22,6 +22,7 @@
 
 package org.pentaho.di.core.row.value.timestamp;
 
+import java.lang.reflect.Method;
 import java.sql.Timestamp;
 import java.text.AttributedCharacterIterator;
 import java.text.DateFormatSymbols;
@@ -100,6 +101,27 @@ public class SimpleTimestampFormat extends SimpleDateFormat {
    * Default format of the <code>Timestamp</code> object for sql.
    */
   public static final String DEFAULT_TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSSSSS";
+  /**
+    * Fields for advantages of using locale version from  JRE 1.7 and for JRE 1.6 compatibility
+    */
+  private static Method getDefaultLocaleMethod;
+  private static Class<?> locale_category_class;
+  private static Object formatCategory;
+  private static boolean formatCategoryLocaleAvailable = true;
+
+  static {
+    try {
+      locale_category_class = Class.forName( "java.util.Locale$Category" );
+      final Class<?> locale_class = Class.forName( "java.util.Locale" );
+      final Class<?>[] paramTypes = new Class<?>[] { locale_category_class };
+      getDefaultLocaleMethod = locale_class.getMethod( "getDefault", paramTypes );
+      final java.lang.reflect.Field format_field = locale_category_class.getField( "FORMAT" );
+      //we pass null because the FORMAT is an enumeration constant(the same applies for class variables)
+      formatCategory = format_field.get( null );
+    } catch ( Exception e ) {
+      formatCategoryLocaleAvailable = false;
+    }
+  }
 
   /**
    * Sets the date and time format symbols of this date format.
@@ -165,7 +187,24 @@ public class SimpleTimestampFormat extends SimpleDateFormat {
    * @throws IllegalArgumentException if the given pattern is invalid
    */
   public SimpleTimestampFormat( String pattern ) {
-    this( pattern, Locale.getDefault( Locale.Category.FORMAT ) );
+    this( pattern, getCompatibleLocale() );
+  }
+
+  private static Locale getCompatibleLocale() {
+    Locale locale = null;
+    if ( formatCategoryLocaleAvailable ) {
+      try {
+        locale = (Locale) getDefaultLocaleMethod.invoke( locale_category_class, formatCategory );
+      } catch ( Exception ignored ) {
+      //ignored
+      }
+    }
+
+    //for jre 6
+    if ( locale == null ) {
+      locale = Locale.getDefault();
+    }
+    return locale;
   }
 
   /**
