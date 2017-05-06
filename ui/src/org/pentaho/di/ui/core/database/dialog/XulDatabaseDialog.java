@@ -38,6 +38,7 @@ import org.pentaho.di.i18n.GlobalMessages;
 import org.pentaho.di.i18n.LanguageChoice;
 import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
+import org.pentaho.di.ui.spoon.SpoonPluginManager;
 import org.pentaho.di.ui.xul.KettleXulLoader;
 import org.pentaho.ui.database.DatabaseConnectionDialog;
 import org.pentaho.ui.xul.XulComponent;
@@ -147,6 +148,8 @@ public class XulDatabaseDialog {
       container = databaseDialogInstance.getSwtInstance( new KettleXulLoader(), parentShell );
 
       container.addEventHandler( EVENT_ID, DataOverrideHandler.class.getName() );
+
+      SpoonPluginManager.getInstance().applyPluginsForContainer( "connection_dialog", container );
 
       dataHandler = (DataOverrideHandler) container.getEventHandler( EVENT_ID );
       if ( databaseMeta != null ) {
