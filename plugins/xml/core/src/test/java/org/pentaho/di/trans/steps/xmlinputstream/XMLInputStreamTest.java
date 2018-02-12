@@ -23,6 +23,7 @@ package org.pentaho.di.trans.steps.xmlinputstream;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -245,6 +246,8 @@ public class XMLInputStreamTest {
         new XMLInputStream( stepMockHelper.stepMeta, stepMockHelper.stepDataInterface, 0, stepMockHelper.transMeta,
             stepMockHelper.trans );
 
+    RowMetaInterface inputRowMeta = new RowMeta(  );
+    xmlInputStream.setInputRowMeta( inputRowMeta );
     xmlInputStream.init( xmlInputStreamMeta, xmlInputStreamData );
     xmlInputStream.addRowListener( rl );
     boolean haveRowsToRead;
